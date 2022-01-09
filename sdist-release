@@ -1,0 +1,53 @@
+#!/usr/bin/env python3
+"""
+"""
+
+import glob
+import sys
+import os
+import os.path
+import configparser
+import subprocess
+import tempfile
+
+class WorkDir:
+    def __init__(self, path):
+        self.path = path
+        self.old  = os.getcwd()
+    def __enter__(self):
+        os.chdir(self.path)
+        return
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        os.chdir(self.old)
+
+def parse_config():
+    XDG  = os.environ.get('XDG_CONFIG_HOME')
+    path = os.path.join(os.environ['HOME'], ".config") if (XDG is None) else XDG
+    path = os.path.join(path, "sdist-release")
+    cfg  = configparser.ConfigParser()
+    cfg.read(path)
+    return cfg
+
+def run(args) :
+    subprocess.run(args).check_returncode()
+
+# Read configuration
+package = sys.argv[1]
+tag     = sys.argv[2]
+section = parse_config()[package]
+
+# Now prepare source distribution:
+cwd = os.getcwd()
+with tempfile.TemporaryDirectory() as tmp_dir:
+    with WorkDir(tmp_dir):
+        if "github" in section :
+            repo = section["github"]
+            run(["wget",
+                 "https://github.com/%s/archive/%s.zip" % (repo, tag),
+                 "-O", "archive.zip"
+                 ])
+            run(["unzip", "archive.zip"])
+            os.chdir([ d for d in glob.glob("*") if os.path.isdir(d) ][0])
+            run(["cabal", "sdist", "--output-directory", cwd])
+        else:
+            raise Exception("Don't know what to do")
