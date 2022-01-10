@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """
+Program for generating source distributions for haskell packages from
+clean checkout
 """
 
 import glob
