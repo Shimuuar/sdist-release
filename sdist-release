@@ -48,6 +48,8 @@ with tempfile.TemporaryDirectory() as tmp_dir:
                  ])
             run(["unzip", "archive.zip"])
             os.chdir([ d for d in glob.glob("*") if os.path.isdir(d) ][0])
+            if "subdir" in section:
+                os.chdir(section["subdir"])
             run(["cabal", "sdist", "--output-directory", cwd])
         else:
             raise Exception("Don't know what to do")
